@@ -187,7 +187,10 @@ namespace BikeRoubada.Api.Controllers
 
             var usuario = await _usuarioRepository.ObterUsuarioPorEmail(login.Email);
 
-
+            if (usuario == null) {
+                NotificarErro("Usuario não encontrado");
+                return CustomResponse(HttpStatusCode.BadRequest);
+            }
 
             return CustomResponse(HttpStatusCode.OK, new { 
                 token = await GerarJwt(login.Email),
