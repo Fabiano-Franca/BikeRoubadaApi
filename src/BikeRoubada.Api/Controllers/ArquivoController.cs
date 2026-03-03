@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using BikeRoubada.Api.Utilities;
 using BikeRoubada.Api.ViewModels.Arquivo;
+using BikeRoubada.Business.Enums;
 using BikeRoubada.Business.Interfaces;
 using BikeRoubada.Business.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -28,48 +29,86 @@ namespace BikeRoubada.Api.Controllers
             _mapper = mapper;
         }
 
+        //[RequestSizeLimit(100_000_000)]
+        //[HttpPost]
+        //public async Task<ActionResult<ArquivoApenasViewModel>> Adicionar2([FromForm] ArquivoUploadViewModel arquivoUploadViewModel)
+        //{
+        //    if (!ModelState.IsValid)
+        //    {
+        //        return CustomResponse(ModelState);
+        //    }
+
+        //    ArquivoApenasViewModel arquivoApenasViewModel = null;
+
+        //    foreach (var file in arquivoUploadViewModel.FormContent)
+        //    {
+        //        var fileResult = await _fileHandler.UploadFile(file) as FileResult<string>;
+        //        if (!fileResult.Succeeded)
+        //        {
+        //            NotificarErro(fileResult.Error);
+        //            return CustomResponse();
+        //        }
+
+        //        arquivoApenasViewModel = new ArquivoApenasViewModel()
+        //        {
+        //            NomeArquivo = fileResult.Content,
+
+        //        };
+
+        //        if (arquivoUploadViewModel.NomeEntidade.ToLower() == "roubo")
+        //        {
+        //            arquivoApenasViewModel.IdRoubo = arquivoUploadViewModel.IdEntidade;
+        //            arquivoApenasViewModel.Tipo = arquivoUploadViewModel.Tipo;
+        //        }
+
+        //        if (arquivoUploadViewModel.NomeEntidade.ToLower() == "bicicleta")
+        //        {
+        //            arquivoApenasViewModel.IdBicicleta = arquivoUploadViewModel.IdEntidade;
+        //            arquivoApenasViewModel.Tipo = arquivoUploadViewModel.Tipo;
+        //        }
+        //        var arquivo = _mapper.Map<Arquivo>(arquivoApenasViewModel);
+
+        //        await _arquivoService.Adicionar(arquivo);
+        //        arquivoApenasViewModel.Id = arquivo.Id;
+        //        arquivoApenasViewModel.DataCadastro = arquivo.DataCadastro;
+        //    }
+
+        //    return CustomResponse(HttpStatusCode.Created, arquivoApenasViewModel);
+        //}
+
         [RequestSizeLimit(100_000_000)]
         [HttpPost]
         public async Task<ActionResult<ArquivoApenasViewModel>> Adicionar([FromForm] ArquivoUploadViewModel arquivoUploadViewModel)
         {
-            if (!ModelState.IsValid)
-            {
-                return CustomResponse(ModelState);
-            }
+            if (!ModelState.IsValid) return CustomResponse(ModelState);
 
             ArquivoApenasViewModel arquivoApenasViewModel = null;
 
             foreach (var file in arquivoUploadViewModel.FormContent)
             {
-                var fileResult = await _fileHandler.UploadFile(file) as FileResult<string>;
-                if (!fileResult.Succeeded)
+                // 1. Converter o arquivo para Base64
+                string base64String;
+                using (var ms = new MemoryStream())
                 {
-                    NotificarErro(fileResult.Error);
-                    return CustomResponse();
+                    await file.CopyToAsync(ms);
+                    byte[] fileBytes = ms.ToArray();
+                    base64String = Convert.ToBase64String(fileBytes);
                 }
 
+                // 2. Mapear para o ViewModel
                 arquivoApenasViewModel = new ArquivoApenasViewModel()
                 {
-                    NomeArquivo = fileResult.Content,
-
+                    NomeArquivo = file.FileName,
+                    ConteudoBase64 = base64String, // Você precisará criar esse campo no ViewModel também
+                    Tipo = arquivoUploadViewModel.Tipo,
+                    IdRoubo = arquivoUploadViewModel.NomeEntidade.ToLower() == "roubo" ? arquivoUploadViewModel.IdEntidade : null,
+                    IdBicicleta = arquivoUploadViewModel.NomeEntidade.ToLower() == "bicicleta" ? arquivoUploadViewModel.IdEntidade : null
                 };
 
-                if (arquivoUploadViewModel.NomeEntidade.ToLower() == "roubo")
-                {
-                    arquivoApenasViewModel.IdRoubo = arquivoUploadViewModel.IdEntidade;
-                    arquivoApenasViewModel.Tipo = arquivoUploadViewModel.Tipo;
-                }
-
-                if (arquivoUploadViewModel.NomeEntidade.ToLower() == "bicicleta")
-                {
-                    arquivoApenasViewModel.IdBicicleta = arquivoUploadViewModel.IdEntidade;
-                    arquivoApenasViewModel.Tipo = arquivoUploadViewModel.Tipo;
-                }
                 var arquivo = _mapper.Map<Arquivo>(arquivoApenasViewModel);
-
                 await _arquivoService.Adicionar(arquivo);
+
                 arquivoApenasViewModel.Id = arquivo.Id;
-                arquivoApenasViewModel.DataCadastro = arquivo.DataCadastro;
             }
 
             return CustomResponse(HttpStatusCode.Created, arquivoApenasViewModel);
@@ -82,24 +121,39 @@ namespace BikeRoubada.Api.Controllers
             return CustomResponse(HttpStatusCode.OK,  _mapper.Map<IEnumerable<ArquivoApenasViewModel>>(await _arquivoRepository.ObterTodos()));
         }
 
+        //[HttpGet("obter-arquivo")]
+        //public async Task<IActionResult> ObterArquivo2(Guid id)
+        //{
+        //    Arquivo? arquivo = await _arquivoRepository.ObterPorId(id);
+        //    if(arquivo == null)
+        //    {
+        //        NotificarErro("O id fornecido não existe no banco de dados");
+        //        return CustomResponse();
+        //    }
+
+        //    var result = await _fileHandler.DownloadFile(arquivo.NomeArquivo) as FileResult<FileContent>;
+        //    if (!result.Succeeded)
+        //    {
+        //        NotificarErro(result.Error);
+        //        return CustomResponse();
+        //    }
+
+        //    return File(result.Content.Bytes, result.Content.Type, result.Content.FileName);
+        //}
+
         [HttpGet("obter-arquivo")]
         public async Task<IActionResult> ObterArquivo(Guid id)
         {
-            Arquivo? arquivo = await _arquivoRepository.ObterPorId(id);
-            if(arquivo == null)
-            {
-                NotificarErro("O id fornecido não existe no banco de dados");
-                return CustomResponse();
-            }
+            var arquivo = await _arquivoRepository.ObterPorId(id);
+            if (arquivo == null) return NotFound();
 
-            var result = await _fileHandler.DownloadFile(arquivo.NomeArquivo) as FileResult<FileContent>;
-            if (!result.Succeeded)
-            {
-                NotificarErro(result.Error);
-                return CustomResponse();
-            }
+            // Converter Base64 de volta para bytes
+            byte[] fileBytes = Convert.FromBase64String(arquivo.ConteudoBase64);
 
-            return File(result.Content.Bytes, result.Content.Type, result.Content.FileName);
+            // Determinar o MIME Type baseado no tipo que você salvou
+            string contentType = arquivo.Tipo == TipoArquivo.Imagem ? "image/jpeg" : "application/pdf";
+
+            return File(fileBytes, contentType, arquivo.NomeArquivo);
         }
 
         [HttpGet("exibir-imagem")]

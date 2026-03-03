@@ -9,6 +9,8 @@ namespace BikeRoubada.Api.ViewModels.Arquivo
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Guid Id { get; set; }
         public string NomeArquivo { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? ConteudoBase64 { get; set; }
         public TipoArquivo Tipo { get; set; }
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Guid? IdRoubo { get; set; }

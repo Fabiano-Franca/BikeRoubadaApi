@@ -11,17 +11,20 @@ using System.Net;
 using System.Net.Mail;
 using System.Text;
 
-
-
 internal class Program
 {
     private static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        // Configura a porta dinamicamente para o Railway
-        var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-        builder.WebHost.UseUrls($"http://*:{port}");
+        // --- AJUSTE DE PORTA (FIX) ---
+        // Só sobrescrevemos as URLs se a variável PORT existir (Ambiente Railway).
+        // Se for nulo, o ASP.NET usará automaticamente o que está no launchSettings.json.
+        var port = Environment.GetEnvironmentVariable("PORT");
+        if (!string.IsNullOrEmpty(port))
+        {
+            builder.WebHost.UseUrls($"http://*:{port}");
+        }
 
         // Add services to the container.
         builder.Services.AddControllers()
@@ -66,37 +69,30 @@ internal class Program
 
         builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-        //var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-
-        // 1. Tenta obter a string de conexão
+        // --- CONFIGURAÇÃO DE CONEXÃO ---
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-
-        // Priorizamos a MYSQL_URL do Railway (que agora será a pública)
         var envUrl = Environment.GetEnvironmentVariable("MYSQL_URL");
 
         if (!string.IsNullOrEmpty(envUrl))
         {
-            // O Railway as vezes envia "mysql://" no início, o Uri suporta isso.
             var uri = new Uri(envUrl);
             var db = uri.AbsolutePath.Trim('/');
             var userPass = uri.UserInfo.Split(':');
 
-            // AJUSTE: Adicionamos parâmetros de compatibilidade para MySQL 8/9
-            // SslMode=None é essencial se você não configurou certificados SSL no Railway
             connectionString = $"Server={uri.Host};Port={uri.Port};Database={db};Uid={userPass[0]};Pwd={userPass[1]};SslMode=None;AllowPublicKeyRetrieval=True;Connect Timeout=60;Charset=utf8;";
 
             Console.WriteLine($"--- Conectando ao Host: {uri.Host} na Porta: {uri.Port} ---");
         }
 
-        // 2. Configuração do DbContext com Versão Fixa e Retry
+        //Definimos a versão uma única vez para evitar inconsistências
         var serverVersion = new MySqlServerVersion(new Version(9, 4, 0));
 
+        // DbContext de Negócio
         builder.Services.AddDbContext<AppDbContext>(options =>
         {
             options.UseMySql(connectionString, serverVersion, x =>
             {
                 x.UseNetTopologySuite();
-                // Isso faz a API esperar o banco subir se houver lag de rede no Railway
                 x.EnableRetryOnFailure(
                     maxRetryCount: 10,
                     maxRetryDelay: TimeSpan.FromSeconds(30),
@@ -104,7 +100,7 @@ internal class Program
             });
         });
 
-        // Configuração do Contexto 2 (Api/Identity) - VERIFIQUE SE ESTÁ ASSIM
+        // DbContext de Identidade (Ajustado para usar a mesma serverVersion e evitar AutoDetect)
         builder.Services.AddDbContext<ApiDbContext>(options =>
             options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
@@ -183,45 +179,48 @@ internal class Program
         app.UseForwardedHeaders();
 
         // 2. Bloco de Migração Automática
-        using (var scope = app.Services.CreateScope())
-        {
-            var services = scope.ServiceProvider;
-            try
+        if (app.Environment.IsProduction())
+        { 
+            using (var scope = app.Services.CreateScope())
             {
-                // 1. Migra o contexto de Dados (Negócio)
-                var dbData = services.GetRequiredService<AppDbContext>();
-                dbData.Database.Migrate();
+                var services = scope.ServiceProvider;
+                try
+                {
+                    // 1. Migra o contexto de Dados (Negócio)
+                    var dbData = services.GetRequiredService<AppDbContext>();
+                    dbData.Database.Migrate();
 
-                // 2. Migra o contexto da API (Identity/Auth)
-                // Substitua 'ApiDbContext' pelo nome real da classe no seu projeto .Api
-                var dbApi = services.GetRequiredService<ApiDbContext>();
-                dbApi.Database.Migrate();
+                    // 2. Migra o contexto da API (Identity/Auth)
+                    // Substitua 'ApiDbContext' pelo nome real da classe no seu projeto .Api
+                    var dbApi = services.GetRequiredService<ApiDbContext>();
+                    dbApi.Database.Migrate();
 
-                Console.WriteLine("--- Todas as migrações (Data e Api) aplicadas com sucesso! ---");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Erro ao aplicar migrações: {ex.Message}");
+                    Console.WriteLine("--- Todas as migrações (Data e Api) aplicadas com sucesso! ---");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Erro ao aplicar migrações: {ex.Message}");
+                }
             }
         }
 
         // Configure the HTTP request pipeline.
-        //if (app.Environment.IsDevelopment())
-        //{
-        //    app.UseCors("Development");
-        //    app.UseSwagger();
-        //    app.UseSwaggerUI();
-        //}
-
-        // Deixe assim para funcionar no Railway:
-        app.UseSwagger();
-        app.UseSwaggerUI(c =>
+        if (app.Environment.IsDevelopment())
         {
-            c.SwaggerEndpoint("/swagger/v1/swagger.json", "Bike Roubada API V1");
-            //c.RoutePrefix = string.Empty; // Isso faz o Swagger abrir direto na URL principal
-        });
-
-        //app.UseHttpsRedirection();
+            app.UseCors("Development");
+            app.UseSwagger();
+            app.UseSwaggerUI();
+            app.UseHttpsRedirection();
+        }
+        else
+        {
+            // Railway:
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Bike Roubada API V1");
+            });
+        }
 
         app.UseAuthentication();
         app.UseAuthorization();

@@ -1,6 +1,4 @@
 ﻿using AutoMapper;
-using BikeRoubada.Api.Utilities;
-using BikeRoubada.Api.ViewModels.Arquivo;
 using BikeRoubada.Api.ViewModels.Usuario;
 using BikeRoubada.Business.Interfaces;
 using BikeRoubada.Business.Models;
@@ -12,109 +10,90 @@ namespace BikeRoubada.Api.Controllers
     [Route("api/[controller]")]
     public class UsuarioController : MainController
     {
-
         private readonly IUsuarioRepository _usuarioRepository;
         private readonly IUsuarioService _usuarioService;
-        private readonly IFileHandler _fileHandler;
         private readonly IMapper _mapper;
-        public UsuarioController(IUsuarioRepository usuarioRepository, 
-                                 IUsuarioService usuarioService, 
+
+        public UsuarioController(IUsuarioRepository usuarioRepository,
+                                 IUsuarioService usuarioService,
                                  IMapper mapper,
-                                 IFileHandler fileHandler,
-                                 INotificador notificador)  : base(notificador)
+                                 INotificador notificador) : base(notificador)
         {
             _usuarioRepository = usuarioRepository;
             _usuarioService = usuarioService;
-            _fileHandler = fileHandler;
             _mapper = mapper;
         }
 
+        // 1. Ajustado para retornar a lista com as strings Base64 que já estão no banco
         [HttpGet]
         public async Task<ActionResult<IEnumerable<UsuarioApenasViewModel>>> ObterTodos()
         {
-            return Ok(_mapper.Map<IEnumerable<UsuarioApenasViewModel>>(await _usuarioRepository.ObterTodos()));
+            var usuarios = await _usuarioRepository.ObterTodos();
+
+            // O mapeamento automático já deve levar a string de usuario.FotoPerfil 
+            // para a propriedade correspondente na ViewModel
+            var viewModels = _mapper.Map<IEnumerable<UsuarioApenasViewModel>>(usuarios);
+
+            return Ok(viewModels);
         }
 
+        // 2. Ajustado para retornar o usuário com a foto em Base64 direto do banco
         [HttpGet("obter-por-id")]
         public async Task<ActionResult<UsuarioApenasViewModel>> ObterPorId(Guid id)
         {
-            return CustomResponse(HttpStatusCode.OK, _mapper.Map<UsuarioApenasViewModel>(await _usuarioRepository.ObterPorId(id)));
-        }
+            var usuario = await _usuarioRepository.ObterPorId(id);
+            if (usuario == null) return NotFound();
 
-        [HttpPost]
-        public async Task<ActionResult<UsuarioApenasViewModel>> Adicionar(UsuarioApenasViewModel usuarioApenasViewModel)
-        {
-            if (!ModelState.IsValid)
-            {
-                return CustomResponse(ModelState);
+            var viewModel = _mapper.Map<UsuarioApenasViewModel>(usuario);
 
-            }
+            // NÃO PRECISA MAIS DE PreencherFotoPerfilBase64, pois a string 
+            // já está na propriedade FotoPerfil vinda do banco.
 
-            var usuario = _mapper.Map<Usuario>(usuarioApenasViewModel);
-
-            await _usuarioService.Adicionar(usuario);
-            usuarioApenasViewModel.Id = usuario.Id;
-            return CustomResponse(HttpStatusCode.Created,  usuarioApenasViewModel);
+            return CustomResponse(HttpStatusCode.OK, viewModel);
         }
 
         [HttpPost("upload-foto-perfil")]
-        public async Task<ActionResult> UploadFotoPerfil(ArquivoUploadFotoPerfilViewModel arquivoUploadViewModel)
+        public async Task<ActionResult> UploadFotoPerfil([FromForm] Guid idUsuario, [FromForm] IFormFile FormContent)
         {
-            if (!ModelState.IsValid)
+            if (FormContent == null || FormContent.Length == 0)
             {
-                return CustomResponse(ModelState);
-            }
-
-            if (arquivoUploadViewModel.FormContent != null)
-            {
-                var fileResult = await _fileHandler.UploadFile(arquivoUploadViewModel.FormContent) as FileResult<string>;
-                if (!fileResult.Succeeded)
-                {
-                    NotificarErro(fileResult.Error);
-                    return CustomResponse();
-                }
-
-                var user = await _usuarioRepository.ObterPorId(arquivoUploadViewModel.IdUsuario);
-                if (user != null) 
-                {
-                    user.FotoPerfil = fileResult.Content;
-                }
-
-                await _usuarioService.Atualizar(user);
-
-                var result = await _fileHandler.DownloadFile(user.FotoPerfil) as FileResult<FileContent>;
-                if (!result.Succeeded)
-                {
-                    NotificarErro(result.Error);
-                    return CustomResponse();
-                }
-
-                return CustomResponse(HttpStatusCode.Created, new
-                {
-                    fileName = result.Content?.FileName,
-                    type = result.Content?.Type
-                });
-                
-                //return File(result.Content.Bytes, result.Content.Type, result.Content.FileName);
-            }
-
-            return CustomResponse();
-        }
-
-        [HttpGet("obter-foto-perfil")]
-        public async Task<ActionResult> ObterFotoPerfil(string fileName)
-        {
-
-            var result = await _fileHandler.DownloadFile(fileName) as FileResult<FileContent>;
-            if (!result.Succeeded)
-            {
-                NotificarErro(result.Error);
+                NotificarErro("Nenhum arquivo de imagem foi enviado.");
                 return CustomResponse();
             }
 
-            var file = File(result.Content.Bytes, result.Content.Type, result.Content.FileName);
+            var usuario = await _usuarioRepository.ObterPorId(idUsuario);
+            if (usuario == null)
+            {
+                NotificarErro("Utilizador não encontrado.");
+                return CustomResponse(HttpStatusCode.NotFound);
+            }
 
-            return file;
+            // CONVERSÃO E PERSISTÊNCIA NO BANCO
+            using (var ms = new MemoryStream())
+            {
+                await FormContent.CopyToAsync(ms);
+                byte[] fileBytes = ms.ToArray();
+
+                var tipoArquivo = FormContent.ContentType;
+                // Salva a string formatada direto na coluna do banco
+                usuario.FotoPerfil = $"data:{tipoArquivo};base64,{Convert.ToBase64String(fileBytes)}";
+            }
+
+            await _usuarioService.Atualizar(usuario);
+
+            return CustomResponse(HttpStatusCode.OK, new { fotoPerfil = usuario.FotoPerfil });
+        }
+
+        // 3. REMOVIDO OU COMENTADO: ObterFotoPerfil (pois não há mais arquivos físicos)
+        // Se o App precisar de um endpoint que retorne apenas a string:
+        [HttpGet("obter-string-foto")]
+        public async Task<IActionResult> ObterStringFoto(Guid idUsuario)
+        {
+            var user = await _usuarioRepository.ObterPorId(idUsuario);
+            if (user == null || string.IsNullOrEmpty(user.FotoPerfil))
+                return NotFound();
+
+            return Ok(new { fotoBase64 = user.FotoPerfil });
         }
 
         [HttpPut]
@@ -122,24 +101,16 @@ namespace BikeRoubada.Api.Controllers
         {
             if (id != usuarioApenasViewModel.Id)
             {
-                NotificarErro("O parâmetro id é diferente do existente no objeto fornecido");
+                NotificarErro("O parâmetro id é diferente do objeto fornecido");
                 return CustomResponse();
             }
 
-            if (!ModelState.IsValid)
-            {
-                return CustomResponse(ModelState);
-            }
+            if (!ModelState.IsValid) return CustomResponse(ModelState);
 
-            // 1. Mapeia e atualiza
             var usuario = _mapper.Map<Usuario>(usuarioApenasViewModel);
             await _usuarioService.Atualizar(usuario);
 
-            // 2. Busca o usuário atualizado do banco para garantir integridade
-            // (Ou você pode re-mapear o objeto 'usuario' se o Service já o preenche)
             var usuarioAtualizado = await _usuarioRepository.ObterPorId(id);
-
-            // 3. Retorna o mapeamento para a ViewModel com Status 200 (OK)
             return CustomResponse(HttpStatusCode.OK, _mapper.Map<UsuarioApenasViewModel>(usuarioAtualizado));
         }
 
@@ -149,6 +120,5 @@ namespace BikeRoubada.Api.Controllers
             await _usuarioService.Remover(id);
             return CustomResponse(HttpStatusCode.NoContent);
         }
-
     }
 }

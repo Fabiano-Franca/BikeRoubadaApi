@@ -9,6 +9,7 @@ namespace BikeRoubada.Api.ViewModels.Arquivo
         public Guid IdEntidade { get; set; }
         [Required(ErrorMessage = "O Campo {0} é requerido")]
         public string NomeEntidade { get; set; }
+        public string? ConteudoBase64 { get; set; }
         [Required(ErrorMessage = "O Campo {0} é requerido")]
         public TipoArquivo Tipo { get; set; }
         public bool Destaque { get; set; }

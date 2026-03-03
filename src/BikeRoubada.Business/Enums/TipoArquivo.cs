@@ -8,8 +8,8 @@ namespace BikeRoubada.Business.Enums
 {
     public enum TipoArquivo
     {
-        NotaFiscal = 1,
-        Imagem = 2,
-        BoletimOcorrencia = 3,
+        Imagem = 1,
+        BoletimOcorrencia = 2,
+        NotaFiscal = 3,
     }
 }

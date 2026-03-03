@@ -7,7 +7,9 @@ namespace BikeRoubada.Api.ViewModels.Usuario
     {
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Guid Id { get; set; }
-        public string FotoPerfil { get; set; }
+        public string? FotoPerfil { get; set; }
+        public string? FotoPerfilBase64 { get; set; }
+
         [Required(ErrorMessage = "O campo {0} é requerido")]
         public string Nome { get; set; }
         [Required(ErrorMessage = "O campo {0} é requerido")]
@@ -20,6 +22,7 @@ namespace BikeRoubada.Api.ViewModels.Usuario
         public int TipoPessoa { get; set; }
         public string Telefone { get; set; }
 
+        [JsonIgnore] // Ignorar no JSON de saída
         public IFormFile? FotoPerfilFormContent { get; set; }
     }
 }
