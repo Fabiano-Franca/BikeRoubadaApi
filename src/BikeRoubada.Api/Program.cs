@@ -18,8 +18,8 @@ internal class Program
         var builder = WebApplication.CreateBuilder(args);
 
         // --- AJUSTE DE PORTA (FIX) ---
-        // Só sobrescrevemos as URLs se a variável PORT existir (Ambiente Railway).
-        // Se for nulo, o ASP.NET usará automaticamente o que está no launchSettings.json.
+        // Sï¿½ sobrescrevemos as URLs se a variï¿½vel PORT existir (Ambiente Railway).
+        // Se for nulo, o ASP.NET usarï¿½ automaticamente o que estï¿½ no launchSettings.json.
         var port = Environment.GetEnvironmentVariable("PORT");
         if (!string.IsNullOrEmpty(port))
         {
@@ -69,7 +69,7 @@ internal class Program
 
         builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-        // --- CONFIGURAÇÃO DE CONEXÃO ---
+        // --- CONFIGURAï¿½ï¿½O DE CONEXï¿½O ---
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
         var envUrl = Environment.GetEnvironmentVariable("MYSQL_URL");
 
@@ -84,10 +84,10 @@ internal class Program
             Console.WriteLine($"--- Conectando ao Host: {uri.Host} na Porta: {uri.Port} ---");
         }
 
-        //Definimos a versão uma única vez para evitar inconsistências
+        //Definimos a versï¿½o uma ï¿½nica vez para evitar inconsistï¿½ncias
         var serverVersion = new MySqlServerVersion(new Version(9, 4, 0));
 
-        // DbContext de Negócio
+        // DbContext de Negï¿½cio
         builder.Services.AddDbContext<AppDbContext>(options =>
         {
             options.UseMySql(connectionString, serverVersion, x =>
@@ -178,7 +178,7 @@ internal class Program
 
         app.UseForwardedHeaders();
 
-        // 2. Bloco de Migração Automática
+        // 2. Bloco de Migraï¿½ï¿½o Automï¿½tica
         if (app.Environment.IsProduction())
         { 
             using (var scope = app.Services.CreateScope())
@@ -186,7 +186,7 @@ internal class Program
                 var services = scope.ServiceProvider;
                 try
                 {
-                    // 1. Migra o contexto de Dados (Negócio)
+                    // 1. Migra o contexto de Dados (Negï¿½cio)
                     var dbData = services.GetRequiredService<AppDbContext>();
                     dbData.Database.Migrate();
 
@@ -195,11 +195,11 @@ internal class Program
                     var dbApi = services.GetRequiredService<ApiDbContext>();
                     dbApi.Database.Migrate();
 
-                    Console.WriteLine("--- Todas as migrações (Data e Api) aplicadas com sucesso! ---");
+                    Console.WriteLine("--- Todas as migraï¿½ï¿½es (Data e Api) aplicadas com sucesso! ---");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Erro ao aplicar migrações: {ex.Message}");
+                    Console.WriteLine($"Erro ao aplicar migraï¿½ï¿½es: {ex.Message}");
                 }
             }
         }
