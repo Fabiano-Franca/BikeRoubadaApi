@@ -97,7 +97,7 @@ namespace BikeRoubada.Api.Controllers
         }
 
         [HttpPut]
-        public async Task<ActionResult<UsuarioApenasViewModel>> Atualizar(Guid id, [FromForm] UsuarioApenasViewModel usuarioApenasViewModel)
+        public async Task<ActionResult<UsuarioApenasViewModel>> Atualizar2(Guid id, [FromForm] UsuarioApenasViewModel usuarioApenasViewModel)
         {
             if (id != usuarioApenasViewModel.Id)
             {
@@ -112,6 +112,35 @@ namespace BikeRoubada.Api.Controllers
 
             var usuarioAtualizado = await _usuarioRepository.ObterPorId(id);
             return CustomResponse(HttpStatusCode.OK, _mapper.Map<UsuarioApenasViewModel>(usuarioAtualizado));
+        }
+
+        [HttpPut]
+        public async Task<ActionResult<UsuarioApenasViewModel>> Atualizar(Guid id, [FromForm] UsuarioApenasViewModel usuarioApenasViewModel)
+        {
+            if (id != usuarioApenasViewModel.Id)
+            {
+                NotificarErro("O parâmetro id é diferente do objeto fornecido");
+                return CustomResponse();
+            }
+
+            if (!ModelState.IsValid) return CustomResponse(ModelState);
+
+            // 1. Busca o usuário atual no banco de dados para não perder a foto
+            var usuarioBanco = await _usuarioRepository.ObterPorId(id);
+            if (usuarioBanco == null) return NotFound();
+
+            // 2. Atualiza apenas os campos de texto vindos da ViewModel
+            usuarioBanco.Nome = usuarioApenasViewModel.Nome;
+            usuarioBanco.Email = usuarioApenasViewModel.Email;
+            usuarioBanco.Telefone = usuarioApenasViewModel.Telefone;
+            usuarioBanco.IdentificadorPessoal = usuarioApenasViewModel.IdentificadorPessoal;
+            usuarioBanco.Genero = usuarioApenasViewModel.Genero;
+            usuarioBanco.TipoPessoa = (TipoPessoa)usuarioApenasViewModel.TipoPessoa;
+
+            // A FotoPerfil permanece a que já estava no 'usuarioBanco'
+            await _usuarioService.Atualizar(usuarioBanco);
+
+            return CustomResponse(HttpStatusCode.OK, _mapper.Map<UsuarioApenasViewModel>(usuarioBanco));
         }
 
         [HttpDelete]
