@@ -96,6 +96,24 @@ namespace BikeRoubada.Api.Controllers
             return Ok(new { fotoBase64 = user.FotoPerfil });
         }
 
+        //[HttpPut]
+        //public async Task<ActionResult<UsuarioApenasViewModel>> Atualizar2(Guid id, [FromForm] UsuarioApenasViewModel usuarioApenasViewModel)
+        //{
+        //    if (id != usuarioApenasViewModel.Id)
+        //    {
+        //        NotificarErro("O parâmetro id é diferente do objeto fornecido");
+        //        return CustomResponse();
+        //    }
+
+        //    if (!ModelState.IsValid) return CustomResponse(ModelState);
+
+        //    var usuario = _mapper.Map<Usuario>(usuarioApenasViewModel);
+        //    await _usuarioService.Atualizar(usuario);
+
+        //    var usuarioAtualizado = await _usuarioRepository.ObterPorId(id);
+        //    return CustomResponse(HttpStatusCode.OK, _mapper.Map<UsuarioApenasViewModel>(usuarioAtualizado));
+        //}
+
         [HttpPut]
         public async Task<ActionResult<UsuarioApenasViewModel>> Atualizar(Guid id, [FromForm] UsuarioApenasViewModel usuarioApenasViewModel)
         {
@@ -107,11 +125,22 @@ namespace BikeRoubada.Api.Controllers
 
             if (!ModelState.IsValid) return CustomResponse(ModelState);
 
-            var usuario = _mapper.Map<Usuario>(usuarioApenasViewModel);
-            await _usuarioService.Atualizar(usuario);
+            // 1. Busca o usuário atual no banco de dados para não perder a foto
+            var usuarioBanco = await _usuarioRepository.ObterPorId(id);
+            if (usuarioBanco == null) return NotFound();
 
-            var usuarioAtualizado = await _usuarioRepository.ObterPorId(id);
-            return CustomResponse(HttpStatusCode.OK, _mapper.Map<UsuarioApenasViewModel>(usuarioAtualizado));
+            // 2. Atualiza apenas os campos de texto vindos da ViewModel
+            usuarioBanco.Nome = usuarioApenasViewModel.Nome;
+            usuarioBanco.Email = usuarioApenasViewModel.Email;
+            usuarioBanco.Telefone = usuarioApenasViewModel.Telefone;
+            usuarioBanco.IdentificadorPessoal = usuarioApenasViewModel.IdentificadorPessoal;
+            usuarioBanco.Genero = usuarioApenasViewModel.Genero;
+            usuarioBanco.TipoPessoa = (TipoPessoa)usuarioApenasViewModel.TipoPessoa;
+
+            // A FotoPerfil permanece a que já estava no 'usuarioBanco'
+            await _usuarioService.Atualizar(usuarioBanco);
+
+            return CustomResponse(HttpStatusCode.OK, _mapper.Map<UsuarioApenasViewModel>(usuarioBanco));
         }
 
         [HttpDelete]
