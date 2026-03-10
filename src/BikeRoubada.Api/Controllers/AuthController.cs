@@ -49,24 +49,73 @@ namespace BikeRoubada.Api.Controllers
             _mapper = mapper;
         }   
 
+        //[HttpPost("register")]
+        //public async Task<ActionResult> Register(RegisterUserViewModel register)
+        //{
+        //    if (!ModelState.IsValid)
+        //    {
+        //        return CustomResponse(HttpStatusCode.BadRequest,  ModelState);
+        //    }
+
+        //    if(_usuarioRepository.Buscar(u => u.Email == register.Email).Result.Any())
+        //    {
+        //        NotificarErro("Já existe um usuario cadastrado com o email fornecido");
+        //        return CustomResponse(HttpStatusCode.BadRequest);
+        //    }
+
+        //    var usuario = _mapper.Map<Usuario>(register);
+        //    await _usuarioService.Adicionar(usuario);
+                    
+
+        //    var user = new IdentityUser
+        //    {
+        //        UserName = register.Email,
+        //        Email = register.Email
+        //    };
+
+           
+        //    var result = await _userManager.CreateAsync(user, register.Password);
+        //    if (!result.Succeeded)
+        //    {
+        //        NotificarErro("Falha ao criar registro");
+        //        return CustomResponse(HttpStatusCode.BadRequest);
+        //    }
+
+        //    await _signInManager.SignInAsync(user, false);
+        //    var codeResponse = CodeResponses.UserCreatedEmailSended;
+        //    try
+        //    {
+        //        await EnviarEmailConfirmacao(user);
+        //    } catch(Exception ex)
+        //    {
+        //        codeResponse = CodeResponses.UserCreatedEmailNotSended;
+        //    }
+            
+
+        //    return CustomResponse(HttpStatusCode.Created, 
+        //        new { 
+        //            token = await GerarJwt(user.Email),
+        //            usuario
+        //        });
+        //}
+
         [HttpPost("register")]
         public async Task<ActionResult> Register(RegisterUserViewModel register)
         {
             if (!ModelState.IsValid)
             {
-                return CustomResponse(HttpStatusCode.BadRequest,  ModelState);
+                return CustomResponse(HttpStatusCode.BadRequest, ModelState);
             }
 
-            if(_usuarioRepository.Buscar(u => u.Email == register.Email).Result.Any())
+            if (_usuarioRepository.Buscar(u => u.Email == register.Email).Result.Any())
             {
                 NotificarErro("Já existe um usuario cadastrado com o email fornecido");
                 return CustomResponse(HttpStatusCode.BadRequest);
             }
 
+            // 1. Adiciona na tabela customizada de usuários
             var usuario = _mapper.Map<Usuario>(register);
             await _usuarioService.Adicionar(usuario);
-
-         
 
             var user = new IdentityUser
             {
@@ -74,11 +123,24 @@ namespace BikeRoubada.Api.Controllers
                 Email = register.Email
             };
 
-           
+            // 2. Tenta criar o usuário no Identity
             var result = await _userManager.CreateAsync(user, register.Password);
+
             if (!result.Succeeded)
             {
-                NotificarErro("Falha ao criar registro");
+                // --- ROLLBACK ---
+                // Aqui chamamos a exclusão do usuário criado acima. 
+                // Nota: Assumo que seu IUsuarioService tem um método Remover(Guid id). 
+                // Ajuste o nome do método/parâmetro conforme a sua interface.
+                await _usuarioService.Remover(usuario.Id);
+
+                // --- DEVOLUÇÃO DO ERRO EXATO ---
+                // Varremos a lista de erros do Identity e adicionamos ao seu Notificador
+                foreach (var error in result.Errors)
+                {
+                    NotificarErro(error.Description);
+                }
+
                 return CustomResponse(HttpStatusCode.BadRequest);
             }
 
@@ -87,21 +149,19 @@ namespace BikeRoubada.Api.Controllers
             try
             {
                 await EnviarEmailConfirmacao(user);
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
+                // Sugestão: Você pode logar o 'ex' aqui futuramente
                 codeResponse = CodeResponses.UserCreatedEmailNotSended;
             }
-            
 
-            return CustomResponse(HttpStatusCode.Created, 
-                new { 
+            return CustomResponse(HttpStatusCode.Created,
+                new
+                {
                     token = await GerarJwt(user.Email),
                     usuario
-                    //nome = register.Nome, 
-                    //email = register.Email,  
-                    //codeResponse = codeResponse
                 });
-
         }
 
         [HttpGet("reenviar-email-confirmacao")]
