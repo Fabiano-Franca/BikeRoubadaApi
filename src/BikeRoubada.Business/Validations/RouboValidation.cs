@@ -13,9 +13,6 @@ namespace BikeRoubada.Business.Validations
             RuleFor(c => c.IdBicicleta)
                 .NotEmpty().WithMessage("O campo {PropertyName} é requerido");
 
-            RuleFor(c => c.Localizacao)
-                .NotEmpty().WithMessage("O campo {PropertyName} é requerido");
-
             RuleFor(c => c.Relato)
                 .NotEmpty().WithMessage("O campo {PropertyName} é requerido");
         }

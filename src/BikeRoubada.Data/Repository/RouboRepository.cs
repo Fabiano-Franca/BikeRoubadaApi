@@ -19,9 +19,18 @@ namespace BikeRoubada.Data.Repository
             return await 
                 Db.Roubos
                 .AsNoTracking()
-                .Where(e => e.Localizacao.IsWithinDistance(point, raioGraus))
+                .Include(e => e.Localizacao)
+                .Where(e => e.Localizacao.Coordenadas.IsWithinDistance(point, raioGraus))
                 .ToListAsync();
+        }
 
+        public async Task<IEnumerable<Roubo>> ObterTodosComLocalizacao()
+        {
+            return await
+                Db.Roubos
+                .AsNoTracking()
+                .Include(e => e.Localizacao)
+                .ToListAsync();
         }
 
         public async Task<Roubo> ObterRouboComArquivos(Guid id)

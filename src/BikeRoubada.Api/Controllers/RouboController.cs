@@ -26,9 +26,12 @@ namespace BikeRoubada.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<RouboApenasViewModel>>> ObterTodos()
+        public async Task<ActionResult<IEnumerable<RouboViewModel>>> ObterTodos()
         {
-            return CustomResponse(HttpStatusCode.OK, _mapper.Map<IEnumerable<RouboApenasViewModel>>(await _rouboRepository.ObterTodos()));
+            // Corrigido: método correto é ObtertodosComLocalizacao (com "t" minúsculo e retorna IEnumerable<Roubo>)
+            var roubos = await _rouboRepository.ObterTodosComLocalizacao();
+
+            return CustomResponse(HttpStatusCode.OK, _mapper.Map<IEnumerable<RouboViewModel>>(roubos));
         }
 
         [HttpGet("obter-por-id")]

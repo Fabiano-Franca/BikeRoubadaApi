@@ -22,6 +22,8 @@ namespace BikeRoubada.Api.Configurations
             services.AddScoped<IRouboRepository, RouboRepository>();
             services.AddScoped<ITipoAlertaRepository, TipoAlertaRepository>();
             services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+            services.AddScoped<ILocalizacaoRepository, LocalizacaoRepository>();
+
 
             //Business
             services.AddScoped<IAlertaService, AlertaService>();
@@ -31,6 +33,7 @@ namespace BikeRoubada.Api.Configurations
             services.AddScoped<IRouboService, RouboService>();
             services.AddScoped<ITipoAlertaService, TipoAlertaService>();
             services.AddScoped<IUsuarioService, UsuarioService>();
+            services.AddScoped<ILocalizacaoService, LocalizacaoService>();
             services.AddScoped<INotificador, Notificador>();
 
             services.AddSingleton<IFileHandler, FileHandler>();

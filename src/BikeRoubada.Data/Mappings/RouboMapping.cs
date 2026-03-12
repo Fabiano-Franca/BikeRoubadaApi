@@ -14,14 +14,22 @@ namespace BikeRoubada.Data.Mappings
                 .IsRequired();
 
             builder.Property(e => e.DataRoubo) .IsRequired();
-
-            builder.Property(e => e.Localizacao)
-                .HasColumnType("point");
+                       
             builder
                 .HasOne(e => e.Bicicleta)
                 .WithMany(e => e.Roubos)
                 .HasForeignKey(e => e.IdBicicleta)
                 .IsRequired();
+
+            //builder
+            //    .HasOne(e => e.Localizacao)
+            //    .WithMany(e => e.Roubos)
+            //    .HasForeignKey(e => e.IdLocalizacao)
+            //    .IsRequired();
+
+            builder.HasOne(e => e.Localizacao)
+           .WithOne(e => e.Roubo) // <-- Linka a propriedade única
+           .HasForeignKey<Roubo>(e => e.IdLocalizacao);
 
             builder.ToTable("Roubos");
 

@@ -25,6 +25,7 @@ namespace BikeRoubada.Api.Configurations
 
             CreateMap<Alerta, AlertaApenasViewModel>().ReverseMap();
             CreateMap<Alerta, AlertaViewModel>().ReverseMap();
+            CreateMap<Localizacao, LocalizacaoViewModel>().ReverseMap();
 
 
             //TipoAlerta

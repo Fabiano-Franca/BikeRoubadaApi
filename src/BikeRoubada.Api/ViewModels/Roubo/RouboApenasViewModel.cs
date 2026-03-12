@@ -1,4 +1,5 @@
 ﻿using BikeRoubada.Api.AuxiliaryModels;
+using BikeRoubada.Business.Models;
 using System.ComponentModel.DataAnnotations;
 
 namespace BikeRoubada.Api.ViewModels.Roubo
@@ -11,11 +12,11 @@ namespace BikeRoubada.Api.ViewModels.Roubo
         [Required(ErrorMessage = "O campo {0} é obrigatório")]
         public DateTime DataRoubo { get; set; }
         public DateTime? DataRecuperacao { get; set; }
-        public SimplePoint Localizacao { get; set; }
         [Required(ErrorMessage = "O campo {0} é obrigatório")]
         public string? NumeroBoletim { get; set; }
         [Required(ErrorMessage = "O campo {0} é obrigatório")]
         public Guid IdBicicleta { get; set; }
+        public Guid IdLocalizacao { get; set; }
         public DateTime DataCadastro { get; set; }
     }
 }

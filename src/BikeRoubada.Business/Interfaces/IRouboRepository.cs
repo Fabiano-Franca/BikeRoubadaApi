@@ -8,5 +8,6 @@ namespace BikeRoubada.Business.Interfaces
         Task<IEnumerable<Roubo>> ObterRoubosPorUsuario(Guid idUsuario);
         Task<Roubo> ObterRouboComArquivos(Guid id);
         Task<IEnumerable<Roubo>> ObterRoubosPorRaio(Point point, int raio);
+        Task<IEnumerable<Roubo>> ObterTodosComLocalizacao();
     }
 }

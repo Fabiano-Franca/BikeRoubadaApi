@@ -11,12 +11,13 @@ namespace BikeRoubada.Api.ViewModels
         [Required(ErrorMessage = "O campo {0} é obrigatório")]
         public DateTime DataRoubo {  get; set; }
         public DateTime? DataRecuperacao { get; set; }
-        public  Point Localizacao { get; set; }
         [Required(ErrorMessage = "O campo {0} é obrigatório")]
         public string? NumeroBoletim {  get; set; }
         [Required(ErrorMessage = "O campo {0} é obrigatório")]
         public Guid IdBicicleta { get; set; }
         public BicicletaViewModel Bicicleta { get; set; }
+        public Guid IdLocalizacao { get; set; }
+        public LocalizacaoViewModel Localizacao { get; set; }
         public List<ArquivoViewModel> Arquivos { get; set; }
         public DateTime DataCadastro { get; set; }
 

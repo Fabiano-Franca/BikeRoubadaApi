@@ -23,6 +23,7 @@ namespace BikeRoubada.Data.Context
         public DbSet<Roubo> Roubos { get; set; }
         public DbSet<TipoAlerta> TiposAlertas { get; set; }
         public DbSet<Usuario> Usuarios { get; set; }
+        public DbSet<Localizacao> Localizacoes { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

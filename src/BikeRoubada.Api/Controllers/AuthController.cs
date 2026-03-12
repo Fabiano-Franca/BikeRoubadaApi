@@ -10,7 +10,6 @@ using BikeRoubada.Api.AuxiliaryModels;
 using BikeRoubada.Api.ViewModels;
 using System.Net;
 using BikeRoubada.Api.Utilities;
-using Microsoft.AspNetCore.WebUtilities;
 using System.Web;
 using BikeRoubada.Business.Models;
 using AutoMapper;
@@ -48,56 +47,6 @@ namespace BikeRoubada.Api.Controllers
             _usuarioService = usuarioService;
             _mapper = mapper;
         }
-
-        //[HttpPost("register")]
-        //public async Task<ActionResult> Register(RegisterUserViewModel register)
-        //{
-        //    if (!ModelState.IsValid)
-        //    {
-        //        return CustomResponse(HttpStatusCode.BadRequest,  ModelState);
-        //    }
-
-        //    if(_usuarioRepository.Buscar(u => u.Email == register.Email).Result.Any())
-        //    {
-        //        NotificarErro("Já existe um usuario cadastrado com o email fornecido");
-        //        return CustomResponse(HttpStatusCode.BadRequest);
-        //    }
-
-        //    var usuario = _mapper.Map<Usuario>(register);
-        //    await _usuarioService.Adicionar(usuario);
-
-
-        //    var user = new IdentityUser
-        //    {
-        //        UserName = register.Email,
-        //        Email = register.Email
-        //    };
-
-
-        //    var result = await _userManager.CreateAsync(user, register.Password);
-        //    if (!result.Succeeded)
-        //    {
-        //        NotificarErro("Falha ao criar registro");
-        //        return CustomResponse(HttpStatusCode.BadRequest);
-        //    }
-
-        //    await _signInManager.SignInAsync(user, false);
-        //    var codeResponse = CodeResponses.UserCreatedEmailSended;
-        //    try
-        //    {
-        //        await EnviarEmailConfirmacao(user);
-        //    } catch(Exception ex)
-        //    {
-        //        codeResponse = CodeResponses.UserCreatedEmailNotSended;
-        //    }
-
-
-        //    return CustomResponse(HttpStatusCode.Created, 
-        //        new { 
-        //            token = await GerarJwt(user.Email),
-        //            usuario
-        //        });
-        //}
 
         [HttpPost("register")]
         public async Task<ActionResult> Register(RegisterUserViewModel register)
@@ -241,11 +190,11 @@ namespace BikeRoubada.Api.Controllers
                 return CustomResponse(HttpStatusCode.BadRequest);
             }
 
-            if (!await _userManager.IsEmailConfirmedAsync(user)) 
-            {
-                NotificarErro("O email não foi confirmado");
-                return CustomResponse(HttpStatusCode.Unauthorized);
-            }
+            //if (!await _userManager.IsEmailConfirmedAsync(user)) 
+            //{
+            //    NotificarErro("O email não foi confirmado");
+            //    return CustomResponse(HttpStatusCode.Unauthorized);
+            //}
            
             var result = await _signInManager.PasswordSignInAsync(login.Email, login.Password, false, true);
             if (!result.Succeeded)
