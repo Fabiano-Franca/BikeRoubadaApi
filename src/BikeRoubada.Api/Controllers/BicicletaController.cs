@@ -47,6 +47,28 @@ namespace BikeRoubada.Api.Controllers
             });
         }
 
+        [HttpGet("buscar")]
+        public async Task<ActionResult> BuscarBicicletas(string termo)
+        {
+            if (string.IsNullOrWhiteSpace(termo))
+            {
+                return CustomResponse(HttpStatusCode.OK, new { bikes = new List<BicicletaViewModel>() });
+            }
+
+            // O EF Core traduz o Contains para um LIKE no banco de dados (ignorando maiúsculas e minúsculas caso o banco esteja configurado como CI - Case Insensitive)
+            var bikes = await _bicicletaRepository.BuscarComIncludes(b =>
+                (b.Descricao != null && b.Descricao.Contains(termo)) ||
+                (b.Serial != null && b.Serial.Contains(termo)) ||
+                (b.Detalhes != null && b.Detalhes.Contains(termo))
+            );
+            
+            return CustomResponse(HttpStatusCode.OK, new
+            {
+                // Importante mapear para BicicletaViewModel para trazer a lista de arquivos e roubos necessários no Card
+                bikes = _mapper.Map<IEnumerable<BicicletaViewModel>>(bikes)
+            });
+        }
+
         [HttpGet("obter-por-id-usuario")]
         public async Task<ActionResult<IEnumerable<BicicletaApenasViewModel>>> ObterPorIdUsuario(Guid id)
         {
@@ -95,6 +117,7 @@ namespace BikeRoubada.Api.Controllers
             await _bicicletaService.Atualizar(bikeConvertida);
             return CustomResponse(System.Net.HttpStatusCode.Created, new { bicicletaApenasViewModel });
         }
+
 
 
         [HttpDelete]

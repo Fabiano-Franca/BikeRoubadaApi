@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,5 +13,6 @@ namespace BikeRoubada.Business.Interfaces
         Task<IEnumerable<Bicicleta>> ObterBicicletasPorUsuario(Guid id);
         Task<IEnumerable<Bicicleta>> ObterBicilcetasArquivos();
         Task<Bicicleta> ObterBicicletaArquivos(Guid id);
+        Task<IEnumerable<Bicicleta>> BuscarComIncludes(Expression<Func<Bicicleta, bool>> predicate);
     }
 }

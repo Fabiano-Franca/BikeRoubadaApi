@@ -183,7 +183,14 @@ namespace BikeRoubada.Api.Controllers
                 return ValidationProblem(ModelState);
             }
 
-            var user = await _userManager.FindByEmailAsync(login.Email);
+            var usuario = await _usuarioRepository.ObterUsuarioPorCpf(login.IdentificadorPessoal);
+            if (usuario == null)
+            {
+                NotificarErro("Usuário não encontrado.");
+                return CustomResponse(HttpStatusCode.BadRequest);
+            }
+
+            var user = await _userManager.FindByEmailAsync(usuario.Email);
             if(user == null)
             {
                 NotificarErro("Requisicao Invalida");
@@ -196,22 +203,15 @@ namespace BikeRoubada.Api.Controllers
             //    return CustomResponse(HttpStatusCode.Unauthorized);
             //}
            
-            var result = await _signInManager.PasswordSignInAsync(login.Email, login.Password, false, true);
+            var result = await _signInManager.PasswordSignInAsync(usuario.Email, login.Password, false, true);
             if (!result.Succeeded)
             {
                 NotificarErro("Login ou senha incorretos");
                 return CustomResponse(HttpStatusCode.BadRequest);
             }
-
-            var usuario = await _usuarioRepository.ObterUsuarioPorEmail(login.Email);
-
-            if (usuario == null) {
-                NotificarErro("Usuario não encontrado");
-                return CustomResponse(HttpStatusCode.BadRequest);
-            }
-
+            
             return CustomResponse(HttpStatusCode.OK, new { 
-                token = await GerarJwt(login.Email),
+                token = await GerarJwt(usuario.Email),
                 usuario
             });
         }

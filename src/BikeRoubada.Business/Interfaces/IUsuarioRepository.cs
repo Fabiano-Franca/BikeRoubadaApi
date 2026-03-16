@@ -7,6 +7,7 @@ namespace BikeRoubada.Business.Interfaces
         Task<IEnumerable<Bicicleta>> ObterBicicletasPorUsuario(Guid id);
         Task<IEnumerable<Endereco>> ObterEnderecosPorUsuario(Guid id);
         Task<Usuario> ObterUsuarioPorEmail(String email);
+        Task<Usuario> ObterUsuarioPorCpf(String identificadorPessoal);
         Task<Usuario> ObterUsuarioCompletoPorEmail(String email);
     }
 }
