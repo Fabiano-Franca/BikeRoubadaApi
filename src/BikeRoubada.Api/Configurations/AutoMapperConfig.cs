@@ -42,6 +42,7 @@ namespace BikeRoubada.Api.Configurations
 
             CreateMap<Bicicleta, BicicletaApenasViewModel>().ReverseMap();
             CreateMap<Bicicleta, BicicletaViewModel>().ReverseMap();
+            CreateMap<Bicicleta, BicicletaBuscaViewModel>().ReverseMap();
 
             CreateMap<Endereco, EnderecoApenasViewModel>().ReverseMap();
             CreateMap<Endereco, EnderecoViewModel>().ReverseMap();

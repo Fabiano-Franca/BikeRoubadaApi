@@ -37,6 +37,12 @@ namespace BikeRoubada.Api.Controllers
             return Ok(_mapper.Map<BicicletaApenasViewModel>(await _bicicletaRepository.ObterPorId(id)));
         }
 
+        [HttpGet("obter-busca-por-id")]
+        public async Task<ActionResult<BicicletaApenasViewModel>> ObterBuscaPorId(Guid id)
+        {
+            return Ok(_mapper.Map<BicicletaBuscaViewModel>(await _bicicletaRepository.ObterBuscaPorId(id)));
+        }
+
         [HttpGet("Obter-bicicletas-por-usuario")]
         public async Task<ActionResult> ObterBicicletasPorUsuario(Guid id)
         {
@@ -44,6 +50,28 @@ namespace BikeRoubada.Api.Controllers
             return CustomResponse(HttpStatusCode.OK, new
             {
                 bikes = _mapper.Map<IEnumerable<BicicletaViewModel>>(await _bicicletaRepository.ObterBicicletasPorUsuario(id))
+            });
+        }
+
+        [HttpGet("buscar")]
+        public async Task<ActionResult> BuscarBicicletas(string termo)
+        {
+            if (string.IsNullOrWhiteSpace(termo))
+            {
+                return CustomResponse(HttpStatusCode.OK, new { bikes = new List<BicicletaViewModel>() });
+            }
+
+            // O EF Core traduz o Contains para um LIKE no banco de dados (ignorando maiúsculas e minúsculas caso o banco esteja configurado como CI - Case Insensitive)
+            var bikes = await _bicicletaRepository.BuscarComIncludes(b =>
+                (b.Descricao != null && b.Descricao.Contains(termo)) ||
+                (b.Serial != null && b.Serial.Contains(termo)) ||
+                (b.Detalhes != null && b.Detalhes.Contains(termo))
+            );
+            
+            return CustomResponse(HttpStatusCode.OK, new
+            {
+                // Importante mapear para BicicletaViewModel para trazer a lista de arquivos e roubos necessários no Card
+                bikes = _mapper.Map<IEnumerable<BicicletaViewModel>>(bikes)
             });
         }
 
@@ -95,6 +123,7 @@ namespace BikeRoubada.Api.Controllers
             await _bicicletaService.Atualizar(bikeConvertida);
             return CustomResponse(System.Net.HttpStatusCode.Created, new { bicicletaApenasViewModel });
         }
+
 
 
         [HttpDelete]

@@ -33,6 +33,16 @@ namespace BikeRoubada.Data.Repository
                 .FirstAsync();
         }
 
+        public async Task<Usuario> ObterUsuarioPorCpf(string identificadorPessoal)
+        {
+            return await Db.Usuarios
+                .Include(u => u.Enderecos)
+                .Include(u => u.Bicicletas)
+                .ThenInclude(b => b.Arquivos)
+                .Where(u => u.IdentificadorPessoal == identificadorPessoal)
+                .FirstAsync();
+        }
+
         public async Task<Usuario> ObterUsuarioCompletoPorEmail(string email)
         {
             return await Db.Usuarios.Where(u => u.Email == email).FirstAsync();

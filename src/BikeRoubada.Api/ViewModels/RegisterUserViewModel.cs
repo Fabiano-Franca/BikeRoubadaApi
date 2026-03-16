@@ -10,6 +10,11 @@ namespace BikeRoubada.Api.ViewModels
         [Required(ErrorMessage = "o campo  {0} é obrigatóro")]
         [MaxLength(15, ErrorMessage = "O tamanho máximo para o campo {0} é {1} de caracteres")]
         public string Telefone { get; set; }
+
+        [Required(ErrorMessage = "o campo  {0} é obrigatóro")]
+        [MaxLength(11, ErrorMessage = "O tamanho máximo para o campo {0} é {1} de caracteres")]
+        public string IdentificadorPessoal { get; set; }
+
         [Required(ErrorMessage = "o campo  {0} é obrigatóro")]
         [EmailAddress(ErrorMessage ="O campo {0} está em formato inválido")]
         public string Email { get; set; }

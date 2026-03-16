@@ -2,6 +2,7 @@
 using BikeRoubada.Business.Models;
 using BikeRoubada.Data.Context;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace BikeRoubada.Data.Repository
 {
@@ -17,6 +18,25 @@ namespace BikeRoubada.Data.Repository
                 .AsNoTracking()
                 .Include(e => e.Arquivos)
                 .FirstOrDefaultAsync(e => e.Id == id);
+        }
+
+        public async Task<Bicicleta> ObterBuscaPorId(Guid id)
+        {
+            return await Db.Bicicletas
+                .AsNoTracking()
+                .Include(e => e.Usuario)
+                .Include(e => e.Endereco)
+                .Include(e => e.Roubos)
+                .Include(e => e.Arquivos)
+                .FirstOrDefaultAsync(e => e.Id == id);
+        }
+
+        public async Task<IEnumerable<Bicicleta>> BuscarComIncludes(Expression<Func<Bicicleta, bool>> predicate)
+        {
+            return await DbSet.AsNoTracking()
+                .Include(e => e.Roubos)
+                .Include(e => e.Arquivos)
+                .Where(predicate).ToListAsync();
         }
 
         public async Task<IEnumerable<Bicicleta>> ObterBicicletasPorUsuario(Guid id)
